@@ -63,7 +63,7 @@ AI never directly creates or modifies a Finding.
 ## Tech Stack
 
 * **Frontend:** React, Vite
-* **Backend:** Node.js, Fastify
+* **Backend:** Node.js, Express
 * **Database:** PostgreSQL, Prisma
 * **Authentication:** JWT
 * **AI:** Google Gemini
