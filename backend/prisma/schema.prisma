@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  INSPECTOR
+  REVIEWER
+}
+
+enum FindingArea {
+  KITCHEN
+  LIVING_ROOM
+  BEDROOM
+  BATHROOM
+  HALLWAY
+  LAUNDRY
+  GARAGE
+  EXTERIOR
+  OTHER
+}
+
+enum FindingCategory {
+  PLUMBING
+  ELECTRICAL
+  FLOORING
+  WALLS_CEILINGS
+  DOORS_WINDOWS
+  HVAC
+  APPLIANCES
+  STRUCTURAL
+  SAFETY
+  PEST
+  CLEANLINESS
+  OTHER
+}
+
+enum FindingSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FindingStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum InspectionStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id                  String              @id @default(cuid())
+  email               String              @unique
+  passwordHash        String
+  role                UserRole
+  propertyAssignments PropertyInspector[]
+  inspections         Inspection[]
+  auditLogs           AuditLog[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+model Property {
+  id                   String              @id @default(cuid())
+  name                 String
+  address              String
+  inspectorAssignments PropertyInspector[]
+  inspections          Inspection[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+}
+
+model PropertyInspector {
+  propertyId  String
+  inspectorId String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  inspector   User     @relation(fields: [inspectorId], references: [id], onDelete: Cascade)
+  assignedAt  DateTime @default(now())
+
+  @@id([propertyId, inspectorId])
+  @@index([inspectorId])
+}
+
+model Inspection {
+  id          String           @id @default(cuid())
+  propertyId  String
+  inspectorId String
+  property    Property         @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  inspector   User             @relation(fields: [inspectorId], references: [id], onDelete: Restrict)
+  findings    Finding[]
+  status      InspectionStatus @default(IN_PROGRESS)
+  completedAt DateTime?
+  inspectedAt DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([propertyId])
+  @@index([inspectorId])
+}
+
+model Finding {
+  id                String          @id @default(cuid())
+  inspectionId      String
+  inspection        Inspection      @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  area              FindingArea
+  category          FindingCategory
+  issue             String
+  severity          FindingSeverity
+  description       String
+  recommendedAction String
+  photoPath         String?
+  status            FindingStatus   @default(DRAFT)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([inspectionId])
+  @@index([status])
+}
+
+model AuditLog {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  action           String
+  affectedEntity   String
+  affectedEntityId String?
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([affectedEntity, affectedEntityId])
+}
